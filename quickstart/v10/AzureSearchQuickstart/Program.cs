@@ -1,6 +1,7 @@
 ﻿namespace AzureSearchQuickstart
 {
     using System;
+    using System.Collections.Generic;
     using System.Linq;
     using System.Threading;
     using Microsoft.Azure.Search;
@@ -26,17 +27,71 @@
             Console.WriteLine("{0}", "Creating index...\n");
             CreateIndex(indexName, serviceClient);
 
-            // Uncomment next 3 lines in "2 - Load documents"
-            // ISearchIndexClient indexClient = serviceClient.Indexes.GetClient(indexName);
-            // Console.WriteLine("{0}", "Uploading documents...\n");
-            // UploadDocuments(indexClient);
+            ISearchIndexClient indexClient = serviceClient.Indexes.GetClient(indexName);
+
+            // Uncomment next 2 lines in "2 - Load documents"
+            Console.WriteLine("{0}", "Uploading documents...\n");
+            UploadDocuments(indexClient);
 
             // Uncomment next 2 lines in "3 - Search an index"
-            // Console.WriteLine("{0}", "Searching index...\n");
-            // RunQueries(indexClient);
+            //Console.WriteLine("{0}", "Searching index...\n");
+            //RunQueries(indexClient);
+
+            // When ordering a field with nulls, they should be returned first
+            TestNullsFirstWhenOrderingAsc(indexClient);
+
+            TestNullsFirstWhenOrderingDesc(indexClient);
 
             Console.WriteLine("{0}", "Complete.  Press any key to end application...\n");
             Console.ReadKey();
+        }
+
+        private static void TestNullsFirstWhenOrderingAsc(ISearchIndexClient indexClient)
+        {
+            SearchParameters parameters;
+            DocumentSearchResult<Hotel> results;
+
+            // Query 0
+            Console.WriteLine("Query 0: Search all hotels, ordering by 'Dummy'");
+            parameters = new SearchParameters()
+            {
+                OrderBy = new List<string>() { "Dummy" }
+            };
+            results = indexClient.Documents.Search<Hotel>("*", parameters);
+
+            var docs = results.Results.Select(r => r.Document);
+
+            if (!string.IsNullOrWhiteSpace(docs.First().Dummy))
+            {
+                Console.WriteLine($"ERROR -> The first document is {docs.First().Dummy}, it should be a null");
+                System.Diagnostics.Debugger.Break();
+            }
+
+            //WriteDocuments(results);
+        }
+
+        private static void TestNullsFirstWhenOrderingDesc(ISearchIndexClient indexClient)
+        {
+            SearchParameters parameters;
+            DocumentSearchResult<Hotel> results;
+
+            // Query 0
+            Console.WriteLine("Query 0: Search all hotels, ordering by 'Dummy desc'");
+            parameters = new SearchParameters()
+            {
+                OrderBy = new List<string>() { "Dummy desc" }
+            };
+            results = indexClient.Documents.Search<Hotel>("*", parameters);
+
+            var docs = results.Results.Select(r => r.Document);
+
+            if (!string.IsNullOrWhiteSpace(docs.Last().Dummy))
+            {
+                Console.WriteLine($"ERROR -> The last document is {docs.Last().Dummy}, it should be a null");
+                System.Diagnostics.Debugger.Break();
+            }
+
+            //WriteDocuments(results);
         }
 
         // Create the search service client
@@ -83,6 +138,7 @@
                     {
                         HotelId = "1",
                         HotelName = "Secret Point Motel",
+                        Dummy = "dummy01",
                         Description = "The hotel is ideally located on the main commercial artery of the city in the heart of New York. A few minutes away is Time's Square and the historic centre of the city, as well as other places of interest that make New York one of America's most attractive and cosmopolitan cities.",
                         DescriptionFr = "L'hôtel est idéalement situé sur la principale artère commerciale de la ville en plein cœur de New York. A quelques minutes se trouve la place du temps et le centre historique de la ville, ainsi que d'autres lieux d'intérêt qui font de New York l'une des villes les plus attractives et cosmopolites de l'Amérique.",
                         Category = "Boutique",
@@ -105,6 +161,7 @@
                     {
                         HotelId = "2",
                         HotelName = "Twin Dome Motel",
+                        Dummy = "dummy02",
                         Description = "The hotel is situated in a  nineteenth century plaza, which has been expanded and renovated to the highest architectural standards to create a modern, functional and first-class hotel in which art and unique historical elements coexist with the most modern comforts.",
                         DescriptionFr = "L'hôtel est situé dans une place du XIXe siècle, qui a été agrandie et rénovée aux plus hautes normes architecturales pour créer un hôtel moderne, fonctionnel et de première classe dans lequel l'art et les éléments historiques uniques coexistent avec le confort le plus moderne.",
                         Category = "Boutique",

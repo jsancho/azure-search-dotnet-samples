@@ -18,6 +18,9 @@ namespace AzureSearchQuickstart
         [Analyzer(AnalyzerName.AsString.EnMicrosoft)]
         public string Description { get; set; }
 
+        [IsFilterable, IsSortable]
+        public string Dummy { get; set; }
+
         [IsSearchable]
         [Analyzer(AnalyzerName.AsString.FrLucene)]
         [JsonProperty("Description_fr")]
@@ -39,5 +42,7 @@ namespace AzureSearchQuickstart
         public double? Rating { get; set; }
 
         public Address Address { get; set; }
+
+        
     }
 }
