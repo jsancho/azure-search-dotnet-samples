@@ -1,6 +1,7 @@
 ﻿using System;
-
+using System.Text.Json;
 using Azure;
+using Azure.Core.Serialization;
 using Azure.Search.Documents;
 using Azure.Search.Documents.Indexes;
 using Azure.Search.Documents.Indexes.Models;
@@ -13,9 +14,9 @@ namespace AzureSearch.SDK.Quickstart.v11
     {
         static void Main(string[] args)
         {
-            string serviceName = "<YOUR-SEARCH-SERVICE-NAME>";
+            string serviceName = "lynx-searchengine-jsancho";
             string indexName = "hotels-quickstart-v11";
-            string apiKey = "<YOUR-ADMIN-KEY>";
+            string apiKey = "6C88A8613367F73135756A4CCFE1C24C";
 
             // Create a SearchIndexClient to send create/delete index commands
             Uri serviceEndpoint = new Uri($"https://{serviceName}.search.windows.net/");
@@ -29,17 +30,23 @@ namespace AzureSearch.SDK.Quickstart.v11
             Console.WriteLine("{0}", "Deleting index...\n");
             DeleteIndexIfExists(indexName, idxclient);
 
-            // Define an index schema and create the index
-            SearchIndex index = new SearchIndex(indexName)
+            var searchClientOptions = new SearchClientOptions
             {
-                Fields =
+                Serializer = new JsonObjectSerializer(
+                    new JsonSerializerOptions
                     {
-                        new SimpleField("hotelId", SearchFieldDataType.String) { IsKey = true, IsFilterable = true, IsSortable = true },
-                        new SearchableField("hotelName") { IsFilterable = true, IsSortable = true },
-                        new SearchableField("hotelCategory") { IsFilterable = true, IsSortable = true },
-                        new SimpleField("baseRate", SearchFieldDataType.Int32) { IsFilterable = true, IsSortable = true },
-                        new SimpleField("lastRenovationDate", SearchFieldDataType.DateTimeOffset) { IsFilterable = true, IsSortable = true }
-                    }
+                        PropertyNamingPolicy = JsonNamingPolicy.CamelCase
+                    })
+            };
+
+            var builder = new FieldBuilder
+            {
+                Serializer = searchClientOptions.Serializer
+            };
+
+            var index = new SearchIndex(indexName)
+            {
+                Fields = builder.Build(typeof(Hotel))
             };
 
             Console.WriteLine("{0}", "Creating index...\n");
